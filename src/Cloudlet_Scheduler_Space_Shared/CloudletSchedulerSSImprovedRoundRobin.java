@@ -50,7 +50,7 @@ public class CloudletSchedulerSSImprovedRoundRobin extends CloudletScheduler {
      */
     protected int usedPes;
 
-    protected int TIME_QUANTA_SIZE = 5;
+    protected double TIME_QUANTA_SIZE = 0;
 
     public void setTIME_QUANTA_SIZE(int TIME_QUANTA_SIZE) {
         this.TIME_QUANTA_SIZE = TIME_QUANTA_SIZE;
@@ -85,7 +85,9 @@ public class CloudletSchedulerSSImprovedRoundRobin extends CloudletScheduler {
         double timeSpan = currentTime - getPreviousTime(); // time since last update
         double capacity = 0.0;
         int cpus = 0;
-
+        if(TIME_QUANTA_SIZE == 0) {
+            TIME_QUANTA_SIZE = timeSpan;
+        }
         for (Double mips : mipsShare) { // count the CPUs available to the VMM
             capacity += mips;
             if (mips > 0) {
@@ -97,7 +99,7 @@ public class CloudletSchedulerSSImprovedRoundRobin extends CloudletScheduler {
         // each machine in the exec list has the same amount of cpu
         double no_of_quantas = Math.ceil(timeSpan * 1.0 / TIME_QUANTA_SIZE);
        // timeSpan = TIME_QUANTA_SIZE * no_of_quantas;
-        JOptionPane.showMessageDialog(null, timeSpan + " ");
+        JOptionPane.showMessageDialog(null, this.getTotalUtilizationOfCpu(timeSpan) + " ");
         for (ResCloudlet rcl : getCloudletExecList()) {
             rcl.updateCloudletFinishedSoFar((long) (capacity * timeSpan * rcl.getNumberOfPes() * Consts.MILLION));
         }

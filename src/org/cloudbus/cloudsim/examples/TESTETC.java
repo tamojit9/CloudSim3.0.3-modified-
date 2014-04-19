@@ -2,6 +2,18 @@
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
+ *//*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ *//*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ *//*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
  */
 package org.cloudbus.cloudsim.examples;
 
@@ -14,12 +26,14 @@ package org.cloudbus.cloudsim.examples;
  * Copyright (c) 2009, The University of Melbourne, Australia
  */
 //import Cloudlet_Scheduler_Space_Shared.CloudletSchedulerSSImprovedRoundRobin;
+import Cloudlet_Scheduler_Time_Shared.CloudletSchedulerTSRoundRobin;
 import DataCenterBrokerModified.DatacenterBrokerModifiedConductance;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
+import javax.swing.JOptionPane;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.CloudletSchedulerTimeShared;
 import org.cloudbus.cloudsim.Datacenter;
@@ -48,13 +62,14 @@ public class TESTETC {
      * The cloudlet list.
      */
     private static List<Cloudlet> cloudletList;
+    static int maxMips, pesCount;
 
     /**
      * The vmlist.
      */
     private static List<Vm> vmlist;
 
-    void addVm(int vmid, int brokerId) {
+    static void addVm(int vmid, int brokerId) {
         // VM description
         int mips = 100;
         long size = 10000; // image size (MB)
@@ -62,19 +77,23 @@ public class TESTETC {
         long bw = 1000;
         int pesNumber = 1; // number of cpus
         String vmm = "Xen"; // VMM name
-        Vm vm = new Vm(vmid, brokerId, (int) (mips * (Math.random()*100)), pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
+        ++pesCount;
+        int factor = (int) (Math.random()*100);
+        maxMips = Math.max(maxMips, factor * mips);
+        Vm vm = new Vm(vmid, brokerId, mips * factor, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTSRoundRobin());
+        vmlist.add(vm);
     }
 
-    void addCloudlet(int id, int brokerId) {
+    static void addCloudlet(int id, int brokerId) {
         // Cloudlet properties
         int pesNumber = 1;
-        long length = 100000;
         long fileSize = 300;
         long outputSize = 300;
         UtilizationModel utilizationModel = new UtilizationModelFull();
-        Cloudlet cloudlet = new Cloudlet(id, (long) (length * (Math.random()*100000)), 
+        Cloudlet cloudlet = new Cloudlet(id, (long) ((Math.random()*100000)), 
                 pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
         cloudlet.setUserId(brokerId);
+        cloudletList.add(cloudlet);
     }
     
     static void staticAllocationVm(int brokerId) {
@@ -103,8 +122,14 @@ public class TESTETC {
             vmlist.add(vm3);
     }
     
-    static void dynamicAllocationOfVm() {
-        
+    static void dynamicAllocationOfVm(int id) {
+        int n = Integer.parseInt(JOptionPane.showInputDialog("Enter No. of Vms ??"));
+        while(n-- > 0) addVm(n, id);
+    }
+    
+    static void dynamicAllocationOfCloudlet(int id) {
+        int n = Integer.parseInt(JOptionPane.showInputDialog("Enter No. of Cloudlets ??"));
+        while(n-- > 0) addCloudlet(n, id);
     }
     
     static void staticAllocationCloudlet(int pesNumber, int brokerId) {
@@ -216,14 +241,14 @@ public class TESTETC {
             // Fourth step: Create one virtual machine
             vmlist = new ArrayList<Vm>();
             int pesNumber = 1; // number of cpus
-            staticAllocationVm(brokerId);
+            dynamicAllocationOfVm(brokerId);
 
             // submit vm list to the broker
             broker.submitVmList(vmlist);
 
             // Fifth step: Create one Cloudlet
             cloudletList = new ArrayList<>();
-            staticAllocationCloudlet(pesNumber, brokerId);
+            dynamicAllocationOfCloudlet(brokerId);
             // submit cloudlet list to the broker
             broker.submitCloudletList(cloudletList);
 			// these two lines are extra and the name suggests their work....
@@ -262,8 +287,11 @@ public class TESTETC {
 		// 2. A Machine contains one or more PEs or CPUs/Cores.
         // In this example, it will have only one core.
         List<Pe> peList = new ArrayList<>();
-
-        int mips = 2000;
+        
+        for (int i = 0; i < pesCount; i++) {
+            peList.add(new Pe(i, new PeProvisionerSimple(maxMips))); // need to store Pe id and MIPS Rating
+        }
+        int mips = 2000, N = vmlist.size() + 1;
 
         // 3. Create PEs and add these into a list.
         peList.add(new Pe(0, new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating
@@ -271,9 +299,9 @@ public class TESTETC {
 		// 4. Create Host with its id and list of PEs and add them to the list
         // of machines
         int hostId = 0;
-        int ram = 2048; // host memory (MB)
-        long storage = 1000000; // host storage
-        int bw = 10000;
+        int ram = 2048 * N; // host memory (MB)
+        long storage = 1000000 * cloudletList.size(); // host storage
+        int bw = 10000 * N;
 
         hostList.add(
                 new Host(

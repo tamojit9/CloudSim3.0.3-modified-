@@ -2,10 +2,21 @@
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
+ *//*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ *//*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ *//*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
  */
 package Cloudlet_Scheduler_Time_Shared;
 
-import Cloudlet_Scheduler_Space_Shared.*;
 import java.util.ArrayList;
 import java.util.List;
 import org.cloudbus.cloudsim.Cloudlet;
@@ -39,9 +50,9 @@ public class CloudletSchedulerTSImprovedRoundRobin extends CloudletScheduler {
      * The current cp us.
      */
     protected int currentCPUs;
-    protected int TIME_QUANTA_SIZE = 5;
+    protected double TIME_QUANTA_SIZE = 0;
 
-    public void setTIME_QUANTA_SIZE(int TIME_QUANTA_SIZE) {
+    public void setTIME_QUANTA_SIZE(double TIME_QUANTA_SIZE) {
         this.TIME_QUANTA_SIZE = TIME_QUANTA_SIZE;
     }
 
@@ -76,7 +87,7 @@ public class CloudletSchedulerTSImprovedRoundRobin extends CloudletScheduler {
     public double updateVmProcessing(double currentTime, List<Double> mipsShare) {
         setCurrentMipsShare(mipsShare);
         double timeSpan = currentTime - getPreviousTime();
-        
+        if(TIME_QUANTA_SIZE == 0)  TIME_QUANTA_SIZE = timeSpan;
         int no_of_quantas = (int) Math.ceil(timeSpan*1.0/TIME_QUANTA_SIZE);
         timeSpan = TIME_QUANTA_SIZE * no_of_quantas;
 
@@ -95,10 +106,10 @@ public class CloudletSchedulerTSImprovedRoundRobin extends CloudletScheduler {
         List<ResCloudlet> toRemove = new ArrayList<>();
         for (ResCloudlet rcl : getCloudletExecList()) {
             long remainingLength = rcl.getRemainingCloudletLength();
-            if (remainingLength == 0) {// ||
-                   // remainingLength <= instructions_in_one_quanta*rcl.getNumberOfPes()) {// finished: remove from the list
-                //if(remainingLength > 0)
-                //    rcl.updateCloudletFinishedSoFar(remainingLength);
+            if ((remainingLength == 0) ||
+                    remainingLength <= instructions_in_one_quanta*rcl.getNumberOfPes()) {// finished: remove from the list
+                if(remainingLength > 0)
+                    rcl.updateCloudletFinishedSoFar(remainingLength);
                 toRemove.add(rcl);
                 cloudletFinish(rcl);
             }
